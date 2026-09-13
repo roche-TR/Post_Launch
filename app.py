@@ -41,23 +41,37 @@ def save_config(df):
     all_data = ws.get_all_records()
     ws_df = pd.DataFrame(all_data)
     headers = ws.row_values(1)
+    
+    updates = []
     for _, row in df.iterrows():
         mask = ws_df['id'] == row['id']
         if mask.any():
             row_idx = ws_df[mask].index[0] + 2
+            # Weight
             weight_col = headers.index('weight') + 1
-            ws.update_cell(row_idx, weight_col, row['weight'])
+            updates.append({
+                'range': gspread.utils.rowcol_to_a1(row_idx, weight_col),
+                'values': [[row['weight']]]
+            })
+            # Target ayları
             for m in months:
                 col_name = f"target_{m.lower()}"
                 if col_name in headers:
                     col_idx = headers.index(col_name) + 1
-                    ws.update_cell(row_idx, col_idx, row[col_name])
+                    updates.append({
+                        'range': gspread.utils.rowcol_to_a1(row_idx, col_idx),
+                        'values': [[row[col_name]]]
+                    })
+    if updates:
+        ws.batch_update(updates)
 
 def save_actuals(df):
     ws = sheet.worksheet("kpi_actuals")
     all_data = ws.get_all_records()
     ws_df = pd.DataFrame(all_data)
     headers = ws.row_values(1)
+    
+    updates = []
     for _, row in df.iterrows():
         mask = ws_df['id'] == row['id']
         if mask.any():
@@ -66,7 +80,12 @@ def save_actuals(df):
                 col_name = f"act_{m.lower()}"
                 if col_name in headers:
                     col_idx = headers.index(col_name) + 1
-                    ws.update_cell(row_idx, col_idx, row[col_name])
+                    updates.append({
+                        'range': gspread.utils.rowcol_to_a1(row_idx, col_idx),
+                        'values': [[row[col_name]]]
+                    })
+    if updates:
+        ws.batch_update(updates)
 
 if 'role' not in st.session_state:
     st.session_state.update({
